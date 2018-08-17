@@ -125,19 +125,42 @@ def send_message_to_slack(text, channel, token, username) :
 def main():
     new_commit = os.environ['CI_COMMIT_SHA']
     old_commit = ""
-    if "CI_BUILD_TAG" in os.environ:
-        print 'there is a tag'
-        new_tag = os.environ["CI_BUILD_TAG"]
-        old_commit = get_commit_by_tag(run_command("git describe --abbrev=0 --tags "+ new_tag +"^"))
-    else :
-        old_commit = get_commit_by_tag(run_command("git describe --abbrev=0 --tags"))
 
+    there_is_a_tag = "CI_BUILD_TAG" in os.environ 
+    there_is_a_release_tag = there_is_a_tag and os.environ["CI_BUILD_TAG"].endswith("-rc")
+    there_is_a_sos_tag = there_is_a_tag and os.environ["CI_BUILD_TAG"].endswith("-sos")
+    
+    # development branch
+    if not there_is_a_tag:
+        print "development case"
+        old_tag = run_command("git describe --abbrev=0 --match v*-rc ")
+   
+    # release case
+    if there_is_a_release_tag:
+        print "release case"
+        new_tag = os.environ["CI_BUILD_TAG"]
+        old_tag = run_command("git describe --abbrev=0 --tags "+ new_tag +"^ --match v*[0-9]-rc")
+
+    # sos case
+    if there_is_a_sos_tag:
+        print "sos case"
+        new_tag = os.environ["CI_BUILD_TAG"]
+        old_tag = run_command("git describe --abbrev=0 --tags "+ new_tag +"^ --match v*[0-9]")
+
+    # maste case
+    if there_is_a_tag and not there_is_a_release_tag and not there_is_a_sos_tag:
+        print "master case"
+        new_tag = os.environ["CI_BUILD_TAG"]
+        old_tag = run_command("git describe --abbrev=0 --tags "+ new_tag +"^ --match v*[0-9]")
+
+    old_commit = get_commit_by_tag(old_tag)
+    print "comparing commits: " + new_commit + "..." + old_commit
     md_formatted_changelog = get_md_formatted_changelog(new_commit, old_commit)
 
     print( md_formatted_changelog)
     if "CI_BUILD_TAG" in os.environ:
-        put_tag_notes_on_gitlab(md_formatted_changelog, new_tag)
-        send_message_to_slack(build_message_to_slack(new_tag), os.environ['ANNOUNCEMENT_CHANNEL'], os.environ['SLACK_BOT_TOKEN'], os.environ['GITLAB_USER_NAME'] )
+       put_tag_notes_on_gitlab(md_formatted_changelog, new_tag)
+       send_message_to_slack(build_message_to_slack(new_tag), os.environ['ANNOUNCEMENT_CHANNEL'], os.environ['SLACK_BOT_TOKEN'], os.environ['GITLAB_USER_NAME'] )
     
 if __name__ == "__main__":
     main()
