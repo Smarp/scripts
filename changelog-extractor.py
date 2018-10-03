@@ -1,4 +1,4 @@
-"""Script parses changelog from git based on 2 latest tags, formates changelog to .md format, creates/updates release on gitlab, posts to slack
+"""Script parses changelog from git based on 2 latest tags, formates changelog to .md format, creates/updates release on gitlab
 """
 import subprocess
 import os
@@ -108,20 +108,6 @@ def build_changelog_body(mapped_issues)  :
         res += line_breaker
     return res
 
-def build_message_to_slack(tag) :
-    return os.environ['CI_PROJECT_URL']  + "/tags/" + tag
-
-def send_message_to_slack(text, channel, token, username) :
-    """Sends message to slack
-        text - text to be send
-        channel - channel name at slack. example: #general
-        token - bot token for posting messages
-        username - bot name
-    """
-    #http post request to slack service to post message to specific channel
-    command = 'curl https://slack.com/api/chat.postMessage -X POST -d "as_user=false" -d "channel='+ channel+'" -d "username='+username+'" -d "token='+token+'" -d "text='+text + '"'
-    os.system(command)
-
 def main():
     new_commit = os.environ['CI_COMMIT_SHA']
     old_commit = ""
@@ -160,7 +146,6 @@ def main():
     print( md_formatted_changelog)
     if there_is_a_tag:
        put_tag_notes_on_gitlab(md_formatted_changelog, new_tag)
-       send_message_to_slack(build_message_to_slack(new_tag), os.environ['ANNOUNCEMENT_CHANNEL'], os.environ['SLACK_BOT_TOKEN'], os.environ['GITLAB_USER_NAME'] )
     
 if __name__ == "__main__":
     main()
