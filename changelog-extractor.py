@@ -2,6 +2,12 @@
 """
 import subprocess
 import os
+import re
+import requests 
+
+def get_files_changed(new_commit,old_commit) :
+    bash_command = 'git diff --name-only ' + new_commit+ ' ' + old_commit
+    return run_command(bash_command)
 
 def get_md_formatted_changelog(new_commit, old_commit) : 
     #saving parameters this way to make sure that they are read properly on bash command
@@ -9,7 +15,13 @@ def get_md_formatted_changelog(new_commit, old_commit) :
     bash_command = 'git --no-pager --git-dir=.git log --first-parent --format="%s"' % get_log_format   + " "+ new_commit+"..." + old_commit
     #getting raw changelog from git
     raw_changelog = run_command(bash_command).replace("\"", "")
-    return  convert_changelog_text_to_md(raw_changelog, None)
+    md_formatted_changelog =  convert_changelog_text_to_md(raw_changelog, None)
+
+    # finding changed sql files in git
+    all_files_changed = get_files_changed(new_commit, old_commit).lower()
+    sql_files_changed = re.compile("sql\/diff.*.sql").findall(all_files_changed) 
+    sql_diff_changed_md = convert_sql_diff_changed_to_md(sql_files_changed)
+    return md_formatted_changelog + sql_diff_changed_md
 
 def build_command_for_tag_notes(reqType, clean_changelog, tag) : 
     formatted_project_path = os.environ['CI_PROJECT_PATH'].replace("/","%2F")  
@@ -76,6 +88,14 @@ issue_types = {"Enhancement","Fix", "Feature", "Ongoing", "Checkmark",
 "Related", "Lab", "Live", "Refactor", "Nochangelog", "Technical"}
 
 uncategorized_issueType = "Uncategorized"
+
+def convert_sql_diff_changed_to_md(files) :
+    if len(files) == 0 :
+        return ""
+    res = build_header_issue("Database changes") 
+    for file in files :
+        res += build_issue(file)
+    return res
 
 def convert_changelog_text_to_md(non_formatted_text , header ) : 
     """Returns .MD formatted changelog based on raw formatted text.
