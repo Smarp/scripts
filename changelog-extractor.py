@@ -3,7 +3,6 @@
 import subprocess
 import os
 import re
-import requests 
 
 def get_files_changed(new_commit,old_commit) :
     bash_command = 'git diff --name-only ' + new_commit+ ' ' + old_commit
