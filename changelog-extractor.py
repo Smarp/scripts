@@ -117,14 +117,14 @@ def build_header_issue(header )  :
     return "### " + header + ":" + line_breaker
 
 def build_issue(issue ) :
-    return " - " + issue
+    return " - " + issue + line_breaker
 
 def build_changelog_body(mapped_issues)  :
     res = ""
     for issue_type  in  mapped_issues :
         res += build_header_issue(issue_type)
         for issue in mapped_issues[issue_type] :
-            res += build_issue(issue) + line_breaker
+            res += build_issue(issue) 
         res += line_breaker
     return res
 
