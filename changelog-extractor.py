@@ -138,7 +138,7 @@ def main():
     # development branch
     if not there_is_a_tag:
         print "development case"
-        old_tag = run_command("git describe --abbrev=0 --match v*-rc ")
+        old_tag = run_command("git describe --abbrev=0 --tags --match v*-rc ")
    
     # release case
     if there_is_a_release_tag:
