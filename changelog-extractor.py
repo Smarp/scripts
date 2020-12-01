@@ -5,6 +5,7 @@ import os
 import re
 
 def convert_api_diff_changed_to_md (new_commit, old_commit) :
+    exists = False
     res = build_header_issue("API changes")
     rls = [f for f in os.listdir('src/smarpshare/versioningapi') if re.match(r'v[0-9]+', f)]
     for version in rls :
@@ -19,7 +20,9 @@ def convert_api_diff_changed_to_md (new_commit, old_commit) :
             else:
                 mode = "removed"
             path = mt[2]
-            res += build_issue('Endpoint /'+path+' was '+mode)
+            txt = 'Endpoint /'+path+' was '+mode
+            res += build_issue(txt)
+            exists = True
 
         diff_api_files = run_command(diff_api_files_cmd)
         result = re.findall(r'([A-Z])\W+src/smarpshare/versioningapi/'+version+'/(?!schema/|handler|router|.+_test)(.+)\.go', diff_api_files, re.MULTILINE)
@@ -39,7 +42,14 @@ def convert_api_diff_changed_to_md (new_commit, old_commit) :
             else:
                 mode = "unchanged"
             path = mt[1]
-            res += build_issue('Endpoint /'+path+' was '+mode)
+            txt = 'Endpoint /'+path+' was '+mode
+            if not txt in res :
+                res += build_issue(txt)
+                exists = True
+
+    if not exists:
+        res = ""
+
     return res
 
 def get_files_changed(new_commit,old_commit) :
