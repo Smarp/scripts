@@ -4,28 +4,69 @@ import subprocess
 import os
 import re
 
+def convert_api_diff_changed_to_md (new_commit, old_commit) :
+    res = build_header_issue("API changes")
+    rls = [f for f in os.listdir('src/smarpshare/versioningapi') if re.match(r'v[0-9]+', f)]
+    for version in rls :
+        diff_api_handlers_cmd = 'git diff --output-indicator-context="=" '+new_commit+' '+old_commit+' -- src/smarpshare/versioningapi/'+version+'/router.go'
+        diff_api_files_cmd = 'git diff-tree --no-commit-id --name-status -r '+new_commit+'^..'+old_commit+' -- src/smarpshare/versioningapi/'+version+'/*.go | grep -v "_test.go" | grep -v "router.go"'
+
+        diff_api_handlers = run_command(diff_api_handlers_cmd)
+        result = re.findall(r'([+|-])\W+route\.NewRoute\(version, http\.Method(.+), \"\/(.+)\", .+\),', diff_api_handlers, re.MULTILINE)
+        for mt in result :
+            if mt[0] == "+":
+                mode = "added"
+            else:
+                mode = "removed"
+            path = mt[2]
+            res += build_issue('Endpoint /'+path+' was '+mode)
+
+        diff_api_files = run_command(diff_api_files_cmd)
+        result = re.findall(r'([A-Z])\W+src/smarpshare/versioningapi/'+version+'/(.+).go', diff_api_files, re.MULTILINE)
+        for mt in result :
+            if mt[0] == "A":
+                mode = "added"
+            elif mt[0] == "C":
+                mode = "modified"
+            elif mt[0] == "D":
+                mode = "removed"
+            elif mt[0] == "M":
+                mode = "modified"
+            elif mt[0] == "R":
+                mode = "modified"
+            elif mt[0] == "T":
+                mode = "modified"
+            else:
+                mode = "unchanged"
+            path = mt[1]
+            res += build_issue('Endpoint /'+path+' was '+mode)
+    return res
+
 def get_files_changed(new_commit,old_commit) :
     bash_command = 'git diff --name-only ' + new_commit+ ' ' + old_commit
     return run_command(bash_command)
 
-def get_md_formatted_changelog(new_commit, old_commit) : 
+def get_md_formatted_changelog(new_commit, old_commit) :
     #saving parameters this way to make sure that they are read properly on bash command
     get_log_format = '%x1f'.join(['%b', '%h']) + '%x1e'
     bash_command = 'git --no-pager --git-dir=.git log --first-parent --format="%s"' % get_log_format   + " "+ new_commit+"..." + old_commit
     #getting raw changelog from git
+
     raw_changelog = run_command(bash_command).replace("\"", "")
     md_formatted_changelog =  convert_changelog_text_to_md(raw_changelog, None)
 
     # finding changed sql files in git
     all_files_changed = get_files_changed(new_commit, old_commit).lower()
-    sql_files_changed = re.compile("sql\/diff.*.sql").findall(all_files_changed) 
+    sql_files_changed = re.compile("sql\/diff.*.sql").findall(all_files_changed)
+    # print all_files_changed
+    api_diff_changed_md = convert_api_diff_changed_to_md(new_commit, old_commit)
     sql_diff_changed_md = convert_sql_diff_changed_to_md(sql_files_changed)
-    return md_formatted_changelog + sql_diff_changed_md
+    return md_formatted_changelog + sql_diff_changed_md + api_diff_changed_md
 
-def build_command_for_tag_notes(reqType, clean_changelog, tag) : 
-    formatted_project_path = os.environ['CI_PROJECT_PATH'].replace("/","%2F")  
+def build_command_for_tag_notes(reqType, clean_changelog, tag) :
+    formatted_project_path = os.environ['CI_PROJECT_PATH'].replace("/","%2F")
     return 'curl  -X '+reqType+'  --header "PRIVATE-TOKEN: $GITLAB_API_PRIVATE_TOKEN" -d description="'+clean_changelog+ '" https://git.smarpsocial.com/api/v4/projects/"'+ formatted_project_path+ '"/repository/tags/"'+tag+'"/release'
-     
+
 def put_tag_notes_on_gitlab( clean_changelog  , tag):
     # create a release notes just in case it hasnt'been created before
     k = os.system(build_command_for_tag_notes("POST", clean_changelog, tag))
@@ -79,24 +120,24 @@ def parse_raw_changelog(non_formatted_text ) :
             mapped_issues.update({uncategorized_issueType : [line]})
         else:
             mapped_issues[uncategorized_issueType].append(line)
-        continue      
+        continue
     return mapped_issues
 
 line_breaker = "\n"
 issue_types = {"Enhancement","Fix", "Feature", "Ongoing", "Checkmark",
-"Related", "Lab", "Live", "Refactor", "Nochangelog", "Technical"}
+               "Related", "Lab", "Live", "Refactor", "Nochangelog", "Technical"}
 
 uncategorized_issueType = "Uncategorized"
 
 def convert_sql_diff_changed_to_md(files) :
     if len(files) == 0 :
         return ""
-    res = build_header_issue("Database changes") 
+    res = build_header_issue("Database changes")
     for file in files :
         res += build_issue(file)
     return res
 
-def convert_changelog_text_to_md(non_formatted_text , header ) : 
+def convert_changelog_text_to_md(non_formatted_text , header ) :
     """Returns .MD formatted changelog based on raw formatted text.
      Header - 'title' for set of issues in that changelog
     """
@@ -105,7 +146,7 @@ def convert_changelog_text_to_md(non_formatted_text , header ) :
         return ""
     res = ""
     if not (not header or header == ""):
-      res += build_header_project(header) + line_breaker
+        res += build_header_project(header) + line_breaker
     res += build_changelog_body(mapped_issues)
     return res
 
@@ -123,7 +164,7 @@ def build_changelog_body(mapped_issues)  :
     for issue_type  in  mapped_issues :
         res += build_header_issue(issue_type)
         for issue in mapped_issues[issue_type] :
-            res += build_issue(issue) 
+            res += build_issue(issue)
         res += line_breaker
     return res
 
@@ -131,15 +172,15 @@ def main():
     new_commit = os.environ['CI_COMMIT_SHA']
     old_commit = ""
 
-    there_is_a_tag = "CI_BUILD_TAG" in os.environ 
+    there_is_a_tag = "CI_BUILD_TAG" in os.environ
     there_is_a_release_tag = there_is_a_tag and os.environ["CI_BUILD_TAG"].endswith("-rc")
     there_is_a_sos_tag = there_is_a_tag and os.environ["CI_BUILD_TAG"].endswith("-sos")
-    
+
     # development branch
     if not there_is_a_tag:
         print "development case"
         old_tag = run_command("git describe --abbrev=0 --tags --match v*-rc ")
-   
+
     # release case
     if there_is_a_release_tag:
         print "release case"
@@ -164,7 +205,7 @@ def main():
 
     print( md_formatted_changelog)
     if there_is_a_tag:
-       put_tag_notes_on_gitlab(md_formatted_changelog, new_tag)
-    
+        put_tag_notes_on_gitlab(md_formatted_changelog, new_tag)
+
 if __name__ == "__main__":
     main()
