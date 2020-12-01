@@ -6,9 +6,10 @@ import re
 
 def convert_api_diff_changed_to_md (new_commit, old_commit) :
     exists = False
-    res = build_header_issue("API changes")
+    res = ""
     rls = [f for f in os.listdir('src/smarpshare/versioningapi') if re.match(r'v[0-9]+', f)]
     for version in rls :
+        res += build_header_issue("API "+version+" changes")
         diff_api_handlers_cmd = 'git diff '+new_commit+' '+old_commit+' -- src/smarpshare/versioningapi/'+version+'/router.go'
         diff_api_files_cmd = 'git diff-tree --no-commit-id --name-status -r '+new_commit+'^..'+old_commit+' -- src/smarpshare/versioningapi/'+version+'/*.go'
 
