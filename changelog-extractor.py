@@ -9,7 +9,7 @@ def convert_api_diff_changed_to_md (new_commit, old_commit) :
     rls = [f for f in os.listdir('src/smarpshare/versioningapi') if re.match(r'v[0-9]+', f)]
     for version in rls :
         diff_api_handlers_cmd = 'git diff --output-indicator-context="=" '+new_commit+' '+old_commit+' -- src/smarpshare/versioningapi/'+version+'/router.go'
-        diff_api_files_cmd = 'git diff-tree --no-commit-id --name-status -r '+new_commit+'^..'+old_commit+' -- src/smarpshare/versioningapi/'+version+'/*.go | grep -v "_test.go" | grep -v "router.go" | grep -v "handler.go"'
+        diff_api_files_cmd = 'git diff-tree --no-commit-id --name-status -r '+new_commit+'^..'+old_commit+' -- src/smarpshare/versioningapi/'+version+'/*.go'
 
         diff_api_handlers = run_command(diff_api_handlers_cmd)
         result = re.findall(r'([+|-])\W+route\.NewRoute\(version, http\.Method(.+), \"\/(.+)\", .+\),', diff_api_handlers, re.MULTILINE)
@@ -22,7 +22,7 @@ def convert_api_diff_changed_to_md (new_commit, old_commit) :
             res += build_issue('Endpoint /'+path+' was '+mode)
 
         diff_api_files = run_command(diff_api_files_cmd)
-        result = re.findall(r'([A-Z])\W+src/smarpshare/versioningapi/'+version+'/(.+).go', diff_api_files, re.MULTILINE)
+        result = re.findall(r'([A-Z])\W+src/smarpshare/versioningapi/'+version+'/(?!schema/|handler|router|.+_test)(.+)\.go', diff_api_files, re.MULTILINE)
         for mt in result :
             if mt[0] == "A":
                 mode = "added"
