@@ -19,6 +19,7 @@ create_tag () {
 slack_message() {
   #Send Slack message
   SLACK_MSG="$CI_PROJECT_NAME was deployed. $CI_PROJECT_URL/tags/$1 ($CI_COMMIT_SHORT_SHA) "
+  ANNOUNCEMENT_CHANNEL="salesnyc"
   curl https://slack.com/api/chat.postMessage -X POST -d "as_user=false" -d "username=$GITLAB_USER_NAME" -d "channel=$ANNOUNCEMENT_CHANNEL" -d "token=$SLACK_BOT_TOKEN" -d "text=$SLACK_MSG" -d "icon_emoji=$PROJECT_EMOJI"
 }
 
@@ -29,5 +30,4 @@ if [ $retVal -eq 0 ]; then
   slack_message "${TAG}"
 else
   echo "no match found for the folder/file : $1"
-  exit $retVal
 fi
