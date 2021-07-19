@@ -73,16 +73,21 @@ def get_md_formatted_changelog(new_commit, old_commit) :
     api_diff_changed_md = convert_api_diff_changed_to_md(new_commit, old_commit)
     return md_formatted_changelog + sql_diff_changed_md + api_diff_changed_md
 
-def build_command_for_tag_notes(reqType, clean_changelog, tag) :
+def build_command_for_delete_relese(tag) :
     formatted_project_path = os.environ['CI_PROJECT_PATH'].replace("/","%2F")
-    return 'curl  -X '+reqType+'  --header "PRIVATE-TOKEN: $GITLAB_API_PRIVATE_TOKEN" -d description="'+clean_changelog+ '" https://git.smarpsocial.com/api/v4/projects/"'+ formatted_project_path+ '"/repository/tags/"'+tag+'"/release'
+    return 'curl --request DELETE --header "PRIVATE-TOKEN: $GITLAB_API_PRIVATE_TOKEN" "https://git.smarpsocial.com/api/v4/projects/'+formatted_project_path+'/releases/' + tag +'"'
+
+def build_command_for_create_relese(clean_changelog,tag) :
+    formatted_project_path = os.environ['CI_PROJECT_PATH'].replace("/","%2F")
+    data = '\'{"name": "'+tag+'","tag_name": "'+tag+'","description": "'+clean_changelog+'"}\''
+    return 'curl --header "Content-Type: application/json" --header "PRIVATE-TOKEN: $GITLAB_API_PRIVATE_TOKEN"  --data '+data+'   --request POST "https://git.smarpsocial.com/api/v4/projects/'+formatted_project_path+'/releases/"'
 
 def put_tag_notes_on_gitlab( clean_changelog  , tag):
-    # create a release notes just in case it hasnt'been created before
-    k = os.system(build_command_for_tag_notes("POST", clean_changelog, tag))
-    # updating just in case it had been created before
-    k = os.system(build_command_for_tag_notes("PUT", clean_changelog, tag))
-    print "\n"
+    print("removing existing release: "+ tag)
+    k = os.system(build_command_for_delete_relese(tag))
+    print("removing new release: "+ tag)
+    k = os.system(build_command_for_create_relese(clean_changelog, tag))
+    print("\n")
 
 def run_command( bash_command ):
     """Sends command to system.
@@ -203,7 +208,7 @@ def main():
         new_tag = os.environ["CI_BUILD_TAG"]
         old_tag = run_command("git describe --abbrev=0 --tags "+ new_tag +"^ --match v*[0-9]")
 
-    # maste case
+    # master case
     if there_is_a_tag and not there_is_a_release_tag and not there_is_a_sos_tag:
         print "master case"
         new_tag = os.environ["CI_BUILD_TAG"]
