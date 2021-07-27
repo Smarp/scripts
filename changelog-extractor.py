@@ -3,6 +3,7 @@
 import subprocess
 import os
 import re
+import json
 
 def convert_api_diff_changed_to_md (new_commit, old_commit) :
     exists = False
@@ -63,7 +64,7 @@ def get_md_formatted_changelog(new_commit, old_commit) :
     bash_command = 'git --no-pager --git-dir=.git log --first-parent --format="%s"' % get_log_format   + " "+ new_commit+"..." + old_commit
     #getting raw changelog from git
 
-    raw_changelog = run_command(bash_command).replace("\"", "")
+    raw_changelog = run_command(bash_command).replace("\"", "").replace("\'", "")
     md_formatted_changelog =  convert_changelog_text_to_md(raw_changelog, None)
 
     # finding changed sql files in git
@@ -79,9 +80,9 @@ def build_command_for_delete_release(tag) :
 
 def build_command_for_create_release(clean_changelog,tag) :
     formatted_project_path = os.environ['CI_PROJECT_PATH'].replace("/","%2F")
-    clean_changelog = clean_changelog.replace("\n","\\n")
-    data = '\'{"name": "'+tag+'","tag_name": "'+tag+'","description": "'+clean_changelog+'"}\''
-    return 'curl --header "Content-Type: application/json" --header "PRIVATE-TOKEN: $GITLAB_API_PRIVATE_TOKEN"  --data '+data+'   --request POST "https://git.smarpsocial.com/api/v4/projects/'+formatted_project_path+'/releases/"'
+    data = {"name": tag,"tag_name": tag,"description": clean_changelog}
+    encodedData =  json.dumps(data)
+    return 'curl --header "Content-Type: application/json" --header "PRIVATE-TOKEN: $GITLAB_API_PRIVATE_TOKEN"  --data \''+encodedData+'\'   --request POST "https://git.smarpsocial.com/api/v4/projects/'+formatted_project_path+'/releases/"'
 
 def put_tag_notes_on_gitlab( clean_changelog  , tag):
     print("removing existing release: "+ tag)
