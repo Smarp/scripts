@@ -61,7 +61,7 @@ def get_files_changed(new_commit,old_commit) :
 def get_md_formatted_changelog(new_commit, old_commit) :
     #saving parameters this way to make sure that they are read properly on bash command
     get_log_format = '%x1f'.join(['%b', '%h']) + '%x1e'
-    bash_command = 'git --no-pager --git-dir=.git log --first-parent --format="%s"' % get_log_format   + " "+ new_commit+"..." + old_commit
+    bash_command = 'git --no-pager --git-dir=.git log --merges --format="%s"' % get_log_format   + " "+ new_commit+"..." + old_commit
     #getting raw changelog from git
 
     raw_changelog = run_command(bash_command).replace("\"", "").replace("\'", "")
