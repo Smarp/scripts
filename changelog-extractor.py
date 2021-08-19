@@ -8,6 +8,8 @@ import json
 def convert_api_diff_changed_to_md (new_commit, old_commit) :
     exists = False
     res = ""
+    if not os.path.exists('src/smarpshare/versioningapi'):
+        return res
     rls = [f for f in os.listdir('src/smarpshare/versioningapi') if re.match(r'v[0-9]+', f)]
     for version in rls :
         res += build_header_issue("API "+version+" changes")
