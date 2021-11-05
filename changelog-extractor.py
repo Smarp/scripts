@@ -71,7 +71,7 @@ def get_md_formatted_changelog(new_commit, old_commit) :
 
     # finding changed sql files in git
     all_files_changed = get_files_changed(new_commit, old_commit).lower()
-    sql_files_changed = re.compile("sql\/diff.*.sql").findall(all_files_changed)
+    sql_files_changed = re.compile("sql.*.\.sql").findall(all_files_changed)
     sql_diff_changed_md = convert_sql_diff_changed_to_md(sql_files_changed)
     api_diff_changed_md = convert_api_diff_changed_to_md(new_commit, old_commit)
     return md_formatted_changelog + sql_diff_changed_md + api_diff_changed_md
