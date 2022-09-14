@@ -4,6 +4,7 @@ import subprocess
 import os
 import re
 import json
+import sys
 
 def convert_api_diff_changed_to_md (new_commit, old_commit) :
     exists = False
@@ -102,6 +103,9 @@ def run_command( bash_command ):
         print(error)
         print("Terminating...")
         quit()
+    if sys.version_info.major == 3 and isinstance(output, bytes):
+        output = output.decode()
+
     return output.strip('\n')
 
 def get_commit_by_tag( tag ):
@@ -197,29 +201,29 @@ def main():
 
     # development branch
     if not there_is_a_tag:
-        print "development case"
+        print("development case")
         old_tag = run_command("git describe --abbrev=0 --tags --match v*-rc ")
 
     # release case
     if there_is_a_release_tag:
-        print "release case"
+        print("release case")
         new_tag = os.environ["CI_BUILD_TAG"]
         old_tag = run_command("git describe --abbrev=0 --tags "+ new_tag +"^ --match v*[0-9]-rc")
 
     # sos case
     if there_is_a_sos_tag:
-        print "sos case"
+        print("sos case")
         new_tag = os.environ["CI_BUILD_TAG"]
         old_tag = run_command("git describe --abbrev=0 --tags "+ new_tag +"^ --match v*[0-9]")
 
     # master case
     if there_is_a_tag and not there_is_a_release_tag and not there_is_a_sos_tag:
-        print "master case"
+        print("master case")
         new_tag = os.environ["CI_BUILD_TAG"]
         old_tag = run_command("git describe --abbrev=0 --tags "+ new_tag +"^ --match v*[0-9]")
 
     old_commit = get_commit_by_tag(old_tag)
-    print "comparing commits: " + new_commit + "..." + old_commit
+    print("comparing commits: " + new_commit + "..." + old_commit)
     md_formatted_changelog = get_md_formatted_changelog(new_commit, old_commit)
 
     print( md_formatted_changelog)
