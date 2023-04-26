@@ -79,13 +79,13 @@ def get_md_formatted_changelog(new_commit, old_commit) :
 
 def build_command_for_delete_release(tag) :
     formatted_project_path = os.environ['CI_PROJECT_PATH'].replace("/","%2F")
-    return 'curl --request DELETE --header "PRIVATE-TOKEN: $GITLAB_API_PRIVATE_TOKEN" "https://git.smarpsocial.com/api/v4/projects/'+formatted_project_path+'/releases/' + tag +'"'
+    return 'curl --request DELETE --header "PRIVATE-TOKEN: $GITLAB_API_PRIVATE_TOKEN" "$CI_API_V4_URL/projects/'+formatted_project_path+'/releases/' + tag +'"'
 
 def build_command_for_create_release(clean_changelog,tag) :
     formatted_project_path = os.environ['CI_PROJECT_PATH'].replace("/","%2F")
     data = {"name": tag,"tag_name": tag,"description": clean_changelog}
     encodedData =  json.dumps(data)
-    return 'curl --header "Content-Type: application/json" --header "PRIVATE-TOKEN: $GITLAB_API_PRIVATE_TOKEN"  --data \''+encodedData+'\'   --request POST "https://git.smarpsocial.com/api/v4/projects/'+formatted_project_path+'/releases/"'
+    return 'curl --header "Content-Type: application/json" --header "PRIVATE-TOKEN: $GITLAB_API_PRIVATE_TOKEN"  --data \''+encodedData+'\'   --request POST "$CI_API_V4_URL/projects/'+formatted_project_path+'/releases/"'
 
 def put_tag_notes_on_gitlab( clean_changelog  , tag):
     print("removing existing release: "+ tag)
