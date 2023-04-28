@@ -195,9 +195,9 @@ def main():
     new_commit = os.environ['CI_COMMIT_SHA']
     old_commit = ""
 
-    there_is_a_tag = "CI_BUILD_TAG" in os.environ
-    there_is_a_release_tag = there_is_a_tag and os.environ["CI_BUILD_TAG"].endswith("-rc")
-    there_is_a_sos_tag = there_is_a_tag and os.environ["CI_BUILD_TAG"].endswith("-sos")
+    there_is_a_tag = "CI_COMMIT_TAG" in os.environ
+    there_is_a_release_tag = there_is_a_tag and os.environ["CI_COMMIT_TAG"].endswith("-rc")
+    there_is_a_sos_tag = there_is_a_tag and os.environ["CI_COMMIT_TAG"].endswith("-sos")
 
     # development branch
     if not there_is_a_tag:
@@ -207,19 +207,19 @@ def main():
     # release case
     if there_is_a_release_tag:
         print("release case")
-        new_tag = os.environ["CI_BUILD_TAG"]
+        new_tag = os.environ["CI_COMMIT_TAG"]
         old_tag = run_command("git describe --abbrev=0 --tags "+ new_tag +"^ --match v*[0-9]-rc")
 
     # sos case
     if there_is_a_sos_tag:
         print("sos case")
-        new_tag = os.environ["CI_BUILD_TAG"]
+        new_tag = os.environ["CI_COMMIT_TAG"]
         old_tag = run_command("git describe --abbrev=0 --tags "+ new_tag +"^ --match v*[0-9]")
 
     # master case
     if there_is_a_tag and not there_is_a_release_tag and not there_is_a_sos_tag:
         print("master case")
-        new_tag = os.environ["CI_BUILD_TAG"]
+        new_tag = os.environ["CI_COMMIT_TAG"]
         old_tag = run_command("git describe --abbrev=0 --tags "+ new_tag +"^ --match v*[0-9]")
 
     old_commit = get_commit_by_tag(old_tag)
